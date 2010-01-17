@@ -1,11 +1,19 @@
 package jerco.gui
 
+import java.math.BigDecimal;
+import java.text.DecimalFormat 
+import java.text.NumberFormat;
+
 import org.jfree.chart.ChartPanel;
 import javax.swing.JButton;
+import javax.swing.JFormattedTextField;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JSeparator;
 import javax.swing.JTextField;
+import javax.swing.SwingConstants;
+import javax.swing.SwingUtilities;
+import javax.swing.event.DocumentListener;
 
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
@@ -36,6 +44,12 @@ class MainFrame extends JFrame {
     
     private FileEdit fileEdit
     
+    def BigDecimal pMin
+    def BigDecimal pMax
+    def BigDecimal pStep
+    
+    def Integer experimentsCount
+    
     private XYSeriesCollection dataset;
     
     private JFreeChart chart;
@@ -49,7 +63,7 @@ class MainFrame extends JFrame {
     }
     
     def private initComponents() {
-        this.setLayout new MigLayout("","[fill, grow]")
+        this.setLayout new MigLayout()
         
         if ((new File(DEBUG_FILE).exists() )) {
             fileEdit = new FileEdit(DEBUG_FILE)
@@ -57,20 +71,32 @@ class MainFrame extends JFrame {
             fileEdit = new FileEdit();
         }
         
-        fileEdit.setButtonText "Загрузить"
-        fileEdit.fileSelected = loadNetwork
+        fileEdit.buttonText = "Загрузить"
         
-        this.add fileEdit, "wrap, span"
+        this.add fileEdit, "north, gap 2px 2px 2px 10px"
         
-        this.add new JSeparator(), "wrap, span"
-        
-        this.add new JLabel("P min");
-        this.add new JTextField(), "growx";
-        this.add new JLabel("P max");
-        this.add new JTextField();
-        this.add new JLabel("P шаг");
-        this.add new JTextField(), "wrap"
+        this.add new JSeparator(JSeparator.HORIZONTAL), "span, w 100%"
+               
+        this.add new JLabel("P min")
+        def input = createDecimalInput("pMin", new ValueRange(min:0, max:1, init:0))
+        this.add input, "w 100%";
 
+        input = createDecimalInput("pMax", new ValueRange(min:0, max:1, init:1))
+        this.add new JLabel("P max")
+        this.add input, "w 100%"
+        
+        this.add new JLabel("P шаг");
+        input =  createDecimalInput("pStep", new ValueRange(min:1E-6, max:1E-2, init:1E-4))
+        this.add input, "wrap, w 100%"
+        
+        this.add new JLabel("N эксп");
+        input = createIntegerInput ("ExperimentsCount", new ValueRange(min:100, max:10000, init:1000))
+        this.add input, "wrap, growx"
+
+        
+        JButton buttonRun = new JButton("Запустить моделирование")
+        buttonRun.actionPerformed = loadNetwork
+        this.add buttonRun, "span, growx"
         
         
         dataset = new XYSeriesCollection();
@@ -80,30 +106,133 @@ class MainFrame extends JFrame {
         "p заражения", "p кластера", dataset, PlotOrientation.VERTICAL,
         false, false, false)
         
-        this.add new ChartPanel(chart)
+        this.add new ChartPanel(chart), "south"
     }
     
     def loadNetwork = { ae ->
-        println "Selected file: ${ae.selectedFileName}"
-        LOG.trace("Selected file: ${ae.selectedFileName}")
+        println "Selected file: ${fileEdit.file}"
+        LOG.trace("Selected file: ${fileEdit.file}")
         net = new NetImpl(new ExcelReader(fileEdit.getFile()))
+        println "Network with ${net.size()} elements is loaded"
         
-        PercolationThresholdScenario scenario = new PercolationThresholdScenario();
+        PercolationThresholdScenario scenario = 
+            new PercolationThresholdScenario(pMin:pMin, pMax:pMax, pStep:pStep, 
+                    net:net);
         scenario.net = net
         scenario.run()
 
         println "Experiment is finished"
-        XYSeries data = new XYSeries(1);
+        XYSeries dataPc = new XYSeries(1);
+        scenario.pCrititcal.each {
+            dataPc.add it.key, it.value
+        }             
         
-        scenario.result.each {
-            data.add it.key, it.value
-        }               
-        dataset.addSeries data
+        XYSeries dataPa = new XYSeries(2)
+        scenario.pAvailability.each { 
+            dataPa.add it.key, it.value
+        }
+        dataset.addSeries dataPc
+        dataset.addSeries dataPa
+        
         assert chart != null
         chart.getXYPlot().dataset = dataset
         
-        println "Network with ${net.size()} elements is loaded"
     };
 
-    
+    def createDecimalInput(String field, ValueRange valueRange) {
+        DecimalFormat format = NumberFormat.getNumberInstance() as DecimalFormat 
+        format.maximumFractionDigits = 6
+        
+        JFormattedTextField result = new JFormattedTextField(format)
+        result.setValue valueRange.init
+        
+        this."set${field}" valueRange.init
+        
+        def bind = {
+            String text = result.getText()
+            def BigDecimal value;
+            if ((text == null) || (text.isEmpty())) {
+                value = valueRange.min
+            } else {
+                value = new BigDecimal(text.replace( ',', '.'))
+            }
+                        
+            if (value < valueRange.min) {
+                value = valueRange.min.toDouble()
+                SwingUtilities.invokeLater({result.setValue(value)})                
+                return
+            } 
+            if (value > valueRange.max) {
+                value = valueRange.max.toDouble()
+                SwingUtilities.invokeLater({result.setValue(value)})                
+                return                
+            }
+            
+            this."set${field}" value
+            println "${field} → ${value}"
+        }
+        
+        def onChange = [ 
+           changedUpdate: {},
+           insertUpdate: bind,
+           removeUpdate: bind
+        ] as DocumentListener
+        
+        result.getDocument().addDocumentListener onChange 
+        result.actionPerformed = bind 
+        result.setHorizontalAlignment SwingConstants.RIGHT;
+        return result
+    }
+
+    def createIntegerInput(String field, ValueRange valueRange) {
+        def format = NumberFormat.getNumberInstance() 
+        
+        JFormattedTextField result = new JFormattedTextField(format)
+        result.setValue valueRange.init
+        
+        this."set${field}" valueRange.init
+        
+        def bind = {
+            //String text = result.getValue()
+            def Integer value = result.value;
+            
+//            if ((text == null) || (text.isEmpty())) {
+//                value = valueRange.min
+//            } else {
+//                value = new Integer.valueOf i(text.replace( ',', '.'))
+//            }
+            
+            if (value < valueRange.min) {
+                value = valueRange.min
+                SwingUtilities.invokeLater({result.setValue(value)})                
+                return
+            } 
+            if (value > valueRange.max) {
+                value = valueRange.max
+                SwingUtilities.invokeLater({result.setValue(value)})                
+                return                
+            }
+            
+            this."set${field}" value
+            println "${field} → ${value}"
+          }
+        
+        def onChange = [ 
+                changedUpdate: {},
+                insertUpdate: bind,
+                removeUpdate: bind
+                ] as DocumentListener
+        
+        result.getDocument().addDocumentListener onChange 
+        result.actionPerformed = bind 
+        result.setHorizontalAlignment SwingConstants.RIGHT;
+        return result
+    }
+}
+
+
+def class ValueRange {
+    def init;
+    def max;
+    def min;
 }

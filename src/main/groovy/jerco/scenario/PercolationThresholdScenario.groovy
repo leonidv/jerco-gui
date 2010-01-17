@@ -14,16 +14,20 @@ class PercolationThresholdScenario implements Runnable {
     
     def experimentsCount = 1000;
     
-    def Map<BigDecimal,BigDecimal> result;
+    def Map<BigDecimal,BigDecimal> pCrititcal;
+    def Map<BigDecimal,BigDecimal> pAvailability;
     
     def void run() {
-        result = new HashMap<BigDecimal, BigDecimal>();
+        pCrititcal = new HashMap<BigDecimal, BigDecimal>();
+        pAvailability = new HashMap<BigDecimal, BigDecimal>();
+        
         def p = pMin;
         
         while (p < 1) {
-            print p + ": "
             p += pStep
-            result.put p, experiment(p)
+            Result result = experiment(p)
+            pCrititcal.put p, result.pCritical
+            pAvailability.put p, result.pAvailability
         }
     }
     
@@ -31,18 +35,28 @@ class PercolationThresholdScenario implements Runnable {
      * Возвращает количество возникновений перколяционного кластера.
      * @return
      */
-    private BigDecimal experiment(p) {
+    private Result experiment(p) {
         int percolationCounter = 0;
+        int percolationClusterSize = 0;
+        
         for (i in 1..experimentsCount) {
-            print i
             net.reset()
             net.infect p
             if (net.hasPercolationCluster()) {
                 percolationCounter++
+                percolationClusterSize += 
+                    (net.percolationClusters[0].size() / net.size())
             }
         }
-        println()
-        println(percolationCounter / experimentsCount)
-        return percolationCounter / experimentsCount
+        return new Result(
+                pCritical: percolationCounter / experimentsCount,
+                pAvailability: percolationClusterSize / experimentsCount
+        )
+        
     }
+}
+
+def class Result {
+    def pCritical
+    def pAvailability
 }
