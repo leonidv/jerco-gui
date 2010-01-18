@@ -16,10 +16,12 @@ class PercolationThresholdScenario implements Runnable {
     
     def Map<BigDecimal,BigDecimal> pCrititcal;
     def Map<BigDecimal,BigDecimal> pAvailability;
+    def Map<BigDecimal,Integer> maxSize;
     
     def void run() {
         pCrititcal = new HashMap<BigDecimal, BigDecimal>();
         pAvailability = new HashMap<BigDecimal, BigDecimal>();
+        maxSize = new HashMap<BigDecimal, Integer>()
         
         def p = pMin;
         
@@ -28,6 +30,7 @@ class PercolationThresholdScenario implements Runnable {
             Result result = experiment(p)
             pCrititcal.put p, result.pCritical
             pAvailability.put p, result.pAvailability
+            maxSize.put p, result.maximumSize
         }
     }
     
@@ -37,20 +40,30 @@ class PercolationThresholdScenario implements Runnable {
      */
     private Result experiment(p) {
         int percolationCounter = 0;
-        int percolationClusterSize = 0;
+        int percolationClusterCount = 0;
+        int maximumSize = 0;
         
         for (i in 1..experimentsCount) {
             net.reset()
             net.infect p
+            
             if (net.hasPercolationCluster()) {
                 percolationCounter++
-                percolationClusterSize += 
-                    (net.percolationClusters[0].size() / net.size())
+                percolationClusterCount += 
+                    (net.percolationClusters.reverse()[0].size() / net.size())
             }
+            
+            def clusters = net.clusters
+            if (!clusters.isEmpty()) {
+                clusters.reverse()
+                maximumSize += clusters[0].size()
+            }
+            
         }
         return new Result(
                 pCritical: percolationCounter / experimentsCount,
-                pAvailability: percolationClusterSize / experimentsCount
+                pAvailability: percolationClusterCount / experimentsCount,
+                maximumSize: maximumSize / experimentsCount
         )
         
     }
@@ -59,4 +72,5 @@ class PercolationThresholdScenario implements Runnable {
 def class Result {
     def pCritical
     def pAvailability
+    def maximumSize
 }

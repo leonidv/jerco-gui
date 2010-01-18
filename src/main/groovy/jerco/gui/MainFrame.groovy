@@ -10,6 +10,7 @@ import javax.swing.JFormattedTextField;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JSeparator;
+import javax.swing.JTabbedPane;
 import javax.swing.JTextField;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
@@ -18,6 +19,7 @@ import javax.swing.event.DocumentListener;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 import org.jfree.chart.plot.PlotOrientation;
+import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.JFreeChart;
 import org.slf4j.Logger;
@@ -28,6 +30,7 @@ import jerco.network.Net;
 import jerco.network.NetImpl;
 import jerco.scenario.PercolationThresholdScenario;
 
+import com.sun.org.apache.xerces.internal.impl.dtd.models.CMStateSet;
 import com.vygovskiy.controls.fileedit.FileEdit;
 
 import net.miginfocom.swing.MigLayout;
@@ -50,9 +53,9 @@ class MainFrame extends JFrame {
     
     def Integer experimentsCount
     
-    private XYSeriesCollection dataset;
-    
-    private JFreeChart chart;
+    private JFreeChart chartPc;
+    private JFreeChart chartPa;
+    private JFreeChart chartMaxSize;
     
     private Net net;
     
@@ -86,7 +89,7 @@ class MainFrame extends JFrame {
         this.add input, "w 100%"
         
         this.add new JLabel("P шаг");
-        input =  createDecimalInput("pStep", new ValueRange(min:1E-6, max:1E-2, init:1E-4))
+        input =  createDecimalInput("pStep", new ValueRange(min:1E-6, max:1E-2, init:1E-3))
         this.add input, "wrap, w 100%"
         
         this.add new JLabel("N эксп");
@@ -98,15 +101,40 @@ class MainFrame extends JFrame {
         buttonRun.actionPerformed = loadNetwork
         this.add buttonRun, "span, growx"
         
+        JTabbedPane chartTabbedPane = new JTabbedPane();
         
-        dataset = new XYSeriesCollection();
-        chart = 
-        ChartFactory.createXYLineChart("Вероятность образования " +
-        		"перколяционного кластера", 
-        "p заражения", "p кластера", dataset, PlotOrientation.VERTICAL,
-        false, false, false)
+        chartPc = createChart([
+              title:"Сохранения связи между КУ",yLabel:"p связанности",
+            ])
+        chartTabbedPane.addTab "Связанность КУ", new ChartPanel(chartPc)
         
-        this.add new ChartPanel(chart), "south"
+        chartPa = createChart([
+              title:"Доступность", yLabel:"p доступности"
+            ])
+        chartTabbedPane.addTab "Доступность", new ChartPanel(chartPa)
+        
+        chartMaxSize = createChart([
+              title:"Максимальный кластер", yLabel:"Количество узлов"
+            ])
+        chartTabbedPane.addTab "Наибольший кластер", new ChartPanel(chartMaxSize)
+
+        
+        this.add chartTabbedPane, "span, h 100%, w 100%"
+    }
+
+    private JFreeChart createChart(params) {
+        if (params.xLabel == null) {
+            params.put "xLabel", "p устойчивости"
+        }
+
+        if (params.dataset == null) {
+            params.put "dataset", new XYSeriesCollection()
+        }
+        
+        return ChartFactory.createXYLineChart(params.title, 
+            params.xLabel, params.yLabel, params.dataset, 
+            PlotOrientation.VERTICAL,
+            false, false, false)
     }
     
     def loadNetwork = { ae ->
@@ -122,20 +150,9 @@ class MainFrame extends JFrame {
         scenario.run()
 
         println "Experiment is finished"
-        XYSeries dataPc = new XYSeries(1);
-        scenario.pCrititcal.each {
-            dataPc.add it.key, it.value
-        }             
-        
-        XYSeries dataPa = new XYSeries(2)
-        scenario.pAvailability.each { 
-            dataPa.add it.key, it.value
-        }
-        dataset.addSeries dataPc
-        dataset.addSeries dataPa
-        
-        assert chart != null
-        chart.getXYPlot().dataset = dataset
+        plotResult chartPc, scenario.pCrititcal;
+        plotResult chartPa, scenario.pAvailability;
+        plotResult chartMaxSize, scenario.maxSize
         
     };
 
@@ -193,15 +210,8 @@ class MainFrame extends JFrame {
         this."set${field}" valueRange.init
         
         def bind = {
-            //String text = result.getValue()
             def Integer value = result.value;
-            
-//            if ((text == null) || (text.isEmpty())) {
-//                value = valueRange.min
-//            } else {
-//                value = new Integer.valueOf i(text.replace( ',', '.'))
-//            }
-            
+                      
             if (value < valueRange.min) {
                 value = valueRange.min
                 SwingUtilities.invokeLater({result.setValue(value)})                
@@ -227,6 +237,14 @@ class MainFrame extends JFrame {
         result.actionPerformed = bind 
         result.setHorizontalAlignment SwingConstants.RIGHT;
         return result
+    }
+
+    private void plotResult(JFreeChart chart, Map map) {
+        XYSeries series = new XYSeries(map.hashCode())
+        map.each { 
+            series.add it.key, it.value
+        }
+        chart.plot.dataset.addSeries series
     }
 }
 
