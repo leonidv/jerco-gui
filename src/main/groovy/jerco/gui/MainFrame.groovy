@@ -94,7 +94,7 @@ class MainFrame extends JFrame {
         this.add input, "w 100%"
         
         this.add new JLabel("P шаг");
-        input =  createDecimalInput("pStep", new ValueRange(min:1E-6, max:1E-2, init:1E-3))
+        input =  createDecimalInput("pStep", new ValueRange(min:1E-6, max:1E-2, init:1E-4))
         this.add input, "wrap, w 100%"
         
         this.add new JLabel("N эксп");

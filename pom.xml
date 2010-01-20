@@ -10,8 +10,15 @@
 
 	<groupId>jerco</groupId>
 	<artifactId>jerco-gui</artifactId>
-	<name>Example Project</name>
-	<version>1.0-SNAPSHOT</version>
+	<name>jerco-gui</name>
+	<version>1.0-RC1</version>
+	
+	<developers>
+	<developer>
+		<name>Leonid Vygovskiy (Выговский Леонид)</name>
+		<url>http://vygovskiy.com</url>
+	</developer>
+	</developers>
 
 	<dependencies>
 		<dependency>
@@ -67,6 +74,11 @@
 		</dependency>
 	</dependencies>
 
+	<description>Приложение для рассчета параметров модели доступности ИОИ</description>
+	<scm>
+		<connection>http://jerco.hg.sourceforge.net/hgweb/jerco/</connection>
+		<url>http://jerco.hg.sourceforge.net/hgweb/jerco/</url>
+	</scm>
 	<build>
 		<resources>
 			<resource>
@@ -123,6 +135,7 @@
 					<descriptors>
 						<descriptor>src/main/maven/assembly.xml</descriptor>
 					</descriptors>
+<!--					<appendAssemblyId>false</appendAssemblyId>-->
 				</configuration>
 				<executions>
 					<execution>
