@@ -3,6 +3,9 @@ package jerco.scenario;
 import java.math.BigDecimal;
 import java.util.HashMap;
 
+
+import jerco.gui.JProgressMonitor 
+import jerco.gui.MainFrame 
 import jerco.network.Net;
 
 class PercolationThresholdScenario implements Runnable {
@@ -18,6 +21,11 @@ class PercolationThresholdScenario implements Runnable {
     def Map<BigDecimal,BigDecimal> pAvailability;
     def Map<BigDecimal,Integer> maxSize;
     
+    def  JProgressMonitor monitor
+    def  MainFrame frame
+    
+    private int progress = 0;
+    
     def void run() {
         pCrititcal = new HashMap<BigDecimal, BigDecimal>();
         pAvailability = new HashMap<BigDecimal, BigDecimal>();
@@ -25,13 +33,23 @@ class PercolationThresholdScenario implements Runnable {
         
         def p = pMin;
         
+        def totalExperiments = (pMax-pMin)/pStep*experimentsCount
+        monitor.maximum = totalExperiments.intValue()
+        monitor.visible = true;
+        
         while (p < 1) {
             p += pStep
             Result result = experiment(p)
+            if (monitor.isCanceled) {
+                break
+            }
+            
             pCrititcal.put p, result.pCritical
             pAvailability.put p, result.pAvailability
             maxSize.put p, result.maximumSize
         }
+        monitor.dispose()
+        frame.onExperimentFinished(this)
     }
     
     /**
@@ -46,7 +64,7 @@ class PercolationThresholdScenario implements Runnable {
         for (i in 1..experimentsCount) {
             net.reset()
             net.infect p
-            
+
             if (net.hasPercolationCluster()) {
                 percolationCounter++
                 percolationClusterCount += 
@@ -57,6 +75,11 @@ class PercolationThresholdScenario implements Runnable {
             if (!clusters.isEmpty()) {
                 clusters.reverse()
                 maximumSize += clusters[0].size()
+            }
+            
+            monitor.inc()
+            if (monitor.isCanceled) {
+                return;
             }
             
         }

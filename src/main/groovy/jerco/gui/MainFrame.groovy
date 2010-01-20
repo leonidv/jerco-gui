@@ -12,6 +12,7 @@ import javax.swing.JLabel;
 import javax.swing.JSeparator;
 import javax.swing.JTabbedPane;
 import javax.swing.JTextField;
+import javax.swing.ProgressMonitor;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.event.DocumentListener;
@@ -59,6 +60,8 @@ class MainFrame extends JFrame {
     
     private Net net;
     
+    private JButton buttonRun;
+    
     public MainFrame() {
         super("Модель доступности ИОИ");
         initComponents();
@@ -67,7 +70,7 @@ class MainFrame extends JFrame {
         LOG.info "MainFrame is created"
     }
     
-    def private initComponents() {
+    private void initComponents() {
         this.setLayout new MigLayout()
         
         if ((new File(DEBUG_FILE).exists() )) {
@@ -99,7 +102,7 @@ class MainFrame extends JFrame {
         this.add input, "wrap, growx"
 
         
-        JButton buttonRun = new JButton("Запустить моделирование")
+        buttonRun = new JButton("Запустить моделирование")
         buttonRun.actionPerformed = loadNetwork
         this.add buttonRun, "span, growx"
         
@@ -140,23 +143,34 @@ class MainFrame extends JFrame {
     }
     
     def loadNetwork = { ae ->
+        buttonRun.enabled = false
         LOG.info "Selected file: ${fileEdit.file}"
         net = new NetImpl(new ExcelReader(fileEdit.getFile()))
         LOG.info "Network with ${net.size()} elements is loaded"
-        
-        PercolationThresholdScenario scenario = 
-            new PercolationThresholdScenario(pMin:pMin, pMax:pMax, pStep:pStep, 
-                    net:net);
+               
+        final PercolationThresholdScenario scenario = 
+            new PercolationThresholdScenario(pMin:pMin, pMax:pMax, pStep:pStep);
         scenario.net = net
-        scenario.run()
-
+        scenario.frame = this;
+        scenario.monitor = new JProgressMonitor(this, false)
+        
+        SwingUtilities.invokeLater {
+            new ScenarioRunner(scenario:scenario).start();
+        } as Runnable; 
+        
+    };
+    
+    
+    public void onExperimentFinished(scenario) {
         LOG.info "Experiment is finished"
+        SwingUtilities.invokeLater {
+            buttonRun.enabled = true
+        } as Runnable
         plotResult chartPc, scenario.pCrititcal;
         plotResult chartPa, scenario.pAvailability;
         plotResult chartMaxSize, scenario.maxSize
-        
-    };
-
+    }
+    
     def createDecimalInput(String field, ValueRange valueRange) {
         DecimalFormat format = NumberFormat.getNumberInstance() as DecimalFormat 
         format.maximumFractionDigits = 6
@@ -254,4 +268,14 @@ def class ValueRange {
     def init;
     def max;
     def min;
+}
+
+def class ScenarioRunner extends Thread {
+    def scenario;
+
+    @Override
+    public void run() {
+        scenario.run();
+    }
+    
 }
