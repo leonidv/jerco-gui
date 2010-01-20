@@ -1,0 +1,1 @@
+java -Xmx1G -jar ${project.build.finalName}.jar

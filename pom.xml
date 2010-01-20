@@ -23,6 +23,10 @@
 					<groupId>org.codehaus.groovy</groupId>
 					<artifactId>groovy-all</artifactId>
 				</exclusion>
+				<exclusion>
+					<groupId>org.slf4j</groupId>
+					<artifactId>slf4j-api</artifactId>
+				</exclusion>
 			</exclusions>
 		</dependency>
 
@@ -68,6 +72,9 @@
 			<resource>
 				<directory>src/main/groovy</directory>
 			</resource>
+			<resource>
+				<directory>src/main/resources</directory>
+			</resource>
 		</resources>
 		<plugins>
 			<plugin>
@@ -87,14 +94,42 @@
 				<executions>
 					<execution>
 						<goals>
-							<!--
-             <goal>generateStubs</goal>
-             -->
+							<!--<goal>generateStubs</goal>-->
 							<goal>compile</goal>
-							<!--
-             <goal>generateTestStubs</goal>
-             -->
+							<!--<goal>generateTestStubs</goal>-->
 							<goal>testCompile</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+
+			<plugin>
+				<artifactId>maven-jar-plugin</artifactId>
+				<configuration>
+					<archive>
+						<manifest>
+							<mainClass>jerco.Run</mainClass>
+							<packageName>jerco</packageName>
+							<addClasspath>true</addClasspath>
+							<classpathPrefix>lib/</classpathPrefix>
+						</manifest>
+					</archive>
+				</configuration>
+			</plugin>
+
+			<plugin>
+				<artifactId>maven-assembly-plugin</artifactId>
+				<configuration>
+					<descriptors>
+						<descriptor>src/main/maven/assembly.xml</descriptor>
+					</descriptors>
+				</configuration>
+				<executions>
+					<execution>
+						<id>make-assembly</id>
+						<phase>package</phase>
+						<goals>
+							<goal>single</goal>
 						</goals>
 					</execution>
 				</executions>

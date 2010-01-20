@@ -63,6 +63,8 @@ class MainFrame extends JFrame {
         super("Модель доступности ИОИ");
         initComponents();
         setSize 400, 600
+
+        LOG.info "MainFrame is created"
     }
     
     def private initComponents() {
@@ -138,10 +140,9 @@ class MainFrame extends JFrame {
     }
     
     def loadNetwork = { ae ->
-        println "Selected file: ${fileEdit.file}"
-        LOG.trace("Selected file: ${fileEdit.file}")
+        LOG.info "Selected file: ${fileEdit.file}"
         net = new NetImpl(new ExcelReader(fileEdit.getFile()))
-        println "Network with ${net.size()} elements is loaded"
+        LOG.info "Network with ${net.size()} elements is loaded"
         
         PercolationThresholdScenario scenario = 
             new PercolationThresholdScenario(pMin:pMin, pMax:pMax, pStep:pStep, 
@@ -149,7 +150,7 @@ class MainFrame extends JFrame {
         scenario.net = net
         scenario.run()
 
-        println "Experiment is finished"
+        LOG.info "Experiment is finished"
         plotResult chartPc, scenario.pCrititcal;
         plotResult chartPa, scenario.pAvailability;
         plotResult chartMaxSize, scenario.maxSize
@@ -186,7 +187,7 @@ class MainFrame extends JFrame {
             }
             
             this."set${field}" value
-            println "${field} → ${value}"
+            LOG.debug "${field} → ${value}"
         }
         
         def onChange = [ 
@@ -224,7 +225,7 @@ class MainFrame extends JFrame {
             }
             
             this."set${field}" value
-            println "${field} → ${value}"
+            LOG.debug "${field} → ${value}"
           }
         
         def onChange = [ 

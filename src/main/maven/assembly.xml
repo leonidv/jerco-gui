@@ -1,0 +1,46 @@
+<assembly
+	xmlns="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.0 http://maven.apache.org/xsd/assembly-1.1.0.xsd">
+	<id>runnable-jar</id>
+	<formats>
+		<format>dir</format>
+		<format>zip</format>
+		<format>tar.gz</format>
+	</formats>
+	<includeBaseDirectory>false</includeBaseDirectory>
+	<dependencySets>
+		<dependencySet>
+			<outputDirectory>lib</outputDirectory>
+			<excludes>
+				<exclude>jerco:jerco-gui</exclude>
+				<exclude>org.codehaus.groovy.maven.feature:gmaven-feature-support</exclude>
+				<exclude>org.codehaus.groovy.maven.runtime:gmaven-runtime-1.6</exclude>
+				<exclude>org.codehaus.groovy.maven.runtime:gmaven-runtime-1.6</exclude>
+				<exclude>org.codehaus.groovy.maven.runtime:gmaven-runtime-1.6</exclude>
+				<exclude>org.codehaus.groovy.maven.feature:gmaven-feature-support</exclude>
+				<exclude>org.codehaus.groovy.maven.feature:gmaven-feature-api</exclude>
+				<exclude>org.codehaus.groovy.maven.runtime:gmaven-runtime-support</exclude>
+				<exclude>org.codehaus.groovy.maven.runtime:gmaven-runtime-api</exclude>
+				<exclude>org.codehaus.groovy.maven:gmaven-common</exclude>
+				<exclude>org.codehaus.plexus:plexus-utils</exclude>
+				<exclude>com.thoughtworks.qdox:qdox</exclude>
+				<exclude>jline:jline</exclude>
+				<exclude>junit:junit</exclude>
+			</excludes>
+		</dependencySet>
+		<dependencySet>
+			<includes>
+				<include>jerco:jerco-gui</include>
+			</includes>
+		</dependencySet>
+	</dependencySets>
+	  <fileSets>
+	    <fileSet>
+	      <directory>src/main/scripts</directory>
+	      <outputDirectory>/</outputDirectory>
+	      <filtered>true</filtered>
+	      <fileMode>0764</fileMode>
+	    </fileSet>
+	  </fileSets>
+</assembly>
