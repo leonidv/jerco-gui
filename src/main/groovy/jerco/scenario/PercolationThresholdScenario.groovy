@@ -3,12 +3,18 @@ package jerco.scenario;
 import java.math.BigDecimal;
 import java.util.HashMap;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 import jerco.gui.JProgressMonitor 
 import jerco.gui.MainFrame 
+import jerco.network.Cluster 
 import jerco.network.Net;
 
 class PercolationThresholdScenario implements Runnable {
+    final static Logger LOG = LoggerFactory.getLogger(PercolationThresholdScenario.class);
+    
     def Net net;
     
     def pMin = 0.0;
@@ -40,13 +46,17 @@ class PercolationThresholdScenario implements Runnable {
         while (p < 1) {
             p += pStep
             Result result = experiment(p)
-            if (monitor.isCanceled) {
-                break
-            }
+            
+            LOG.info "p = ${p}, ${result}"
             
             pCrititcal.put p, result.pCritical
             pAvailability.put p, result.pAvailability
             maxSize.put p, result.maximumSize
+            
+            if (monitor.isCanceled) {
+                break
+            }
+            
         }
         monitor.dispose()
         frame.onExperimentFinished(this)
@@ -57,23 +67,32 @@ class PercolationThresholdScenario implements Runnable {
      * @return
      */
     private Result experiment(p) {
-        int percolationCounter = 0;
-        int percolationClusterCount = 0;
+        int percolationClusterCounter = 0;
+        BigDecimal availabilityCounter = 0.0;
         int maximumSize = 0;
         
         for (i in 1..experimentsCount) {
             net.reset()
             net.infect p
-
+            
             if (net.hasPercolationCluster()) {
-                percolationCounter++
-                percolationClusterCount += 
-                    (net.percolationClusters.reverse()[0].size() / net.size())
+                percolationClusterCounter++   
+                
+                List<Cluster> clusters = net.percolationClusters.reverse()
+                BigDecimal pA = clusters[0].size() / net.size();                
+                LOG.debug "pAvailability = ${pA}"
+                
+                availabilityCounter += pA;                 
+                        
+                LOG.debug "availabilityCounter = ${availabilityCounter}"
             }
             
             def clusters = net.clusters
             if (!clusters.isEmpty()) {
-                clusters.reverse()
+                clusters = clusters.reverse()
+                LOG.debug("p = ${p}, clusters found: ${clusters.size()}, " +
+                        "maximum cluster: ${clusters[0].size()}");
+                
                 maximumSize += clusters[0].size()
             }
             
@@ -84,9 +103,9 @@ class PercolationThresholdScenario implements Runnable {
             
         }
         return new Result(
-                pCritical: percolationCounter / experimentsCount,
-                pAvailability: percolationClusterCount / experimentsCount,
-                maximumSize: maximumSize / experimentsCount
+        pCritical: percolationClusterCounter / experimentsCount,
+        pAvailability: availabilityCounter / experimentsCount,
+        maximumSize: maximumSize / experimentsCount
         )
         
     }
@@ -96,4 +115,12 @@ def class Result {
     def pCritical
     def pAvailability
     def maximumSize
+    
+    @Override
+    public String toString() {
+        "pCritical = ${pCritical}, pAvailability = ${pAvailability}, " +
+        "maxSize = ${maximumSize}"
+    }    
+    
+    
 }

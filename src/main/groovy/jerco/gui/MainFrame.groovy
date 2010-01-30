@@ -11,8 +11,6 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JSeparator;
 import javax.swing.JTabbedPane;
-import javax.swing.JTextField;
-import javax.swing.ProgressMonitor;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.event.DocumentListener;
@@ -20,18 +18,16 @@ import javax.swing.event.DocumentListener;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 import org.jfree.chart.plot.PlotOrientation;
-import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.JFreeChart;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import jerco.network.ExcelReader;
 import jerco.network.Net;
 import jerco.network.NetImpl;
+import jerco.network.io.ExcelReader 
 import jerco.scenario.PercolationThresholdScenario;
 
-import com.sun.org.apache.xerces.internal.impl.dtd.models.CMStateSet;
 import com.vygovskiy.controls.fileedit.FileEdit;
 
 import net.miginfocom.swing.MigLayout;
@@ -41,8 +37,8 @@ import net.miginfocom.swing.MigLayout;
 class MainFrame extends JFrame {
     final static Logger LOG = LoggerFactory.getLogger(MainFrame.class);
 
-    final static DEBUG_FILE = "/home/leonidv/Документы/Аспирантура/" +
-    		"Программы/jerco-api/src/test/resources/star.xls"
+    final static DEBUG_FILE = "/home/leonidv/Документы/" +
+    		"Аспирантура/Программы/matrix.xls";
     
     private JButton loadFileButton;
     
@@ -150,6 +146,7 @@ class MainFrame extends JFrame {
                
         final PercolationThresholdScenario scenario = 
             new PercolationThresholdScenario(pMin:pMin, pMax:pMax, pStep:pStep);
+        scenario.experimentsCount = experimentsCount
         scenario.net = net
         scenario.frame = this;
         scenario.monitor = new JProgressMonitor(this, false)
@@ -163,9 +160,7 @@ class MainFrame extends JFrame {
     
     public void onExperimentFinished(scenario) {
         LOG.info "Experiment is finished"
-        SwingUtilities.invokeLater {
-            buttonRun.enabled = true
-        } as Runnable
+        SwingUtilities.invokeLater { buttonRun.enabled = true } as Runnable
         plotResult chartPc, scenario.pCrititcal;
         plotResult chartPa, scenario.pAvailability;
         plotResult chartMaxSize, scenario.maxSize

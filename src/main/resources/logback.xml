@@ -36,6 +36,7 @@
 		<appender-ref ref="gui.log" />
 	</logger>
 	
+	<logger name="jerco.scenario" level="INFO"/>
 
 	<root level="debug">
 		<appender-ref ref="STDOUT" />
