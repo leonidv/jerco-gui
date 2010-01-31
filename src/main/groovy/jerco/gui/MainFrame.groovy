@@ -1,14 +1,17 @@
 package jerco.gui
 
-import java.math.BigDecimal;
 import java.text.DecimalFormat 
 import java.text.NumberFormat;
 
+import java.io.File;
+
 import org.jfree.chart.ChartPanel;
 import javax.swing.JButton;
+import javax.swing.JCheckBox;
 import javax.swing.JFormattedTextField;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JPanel;
 import javax.swing.JSeparator;
 import javax.swing.JTabbedPane;
 import javax.swing.SwingConstants;
@@ -26,6 +29,7 @@ import org.slf4j.LoggerFactory;
 import jerco.network.Net;
 import jerco.network.NetImpl;
 import jerco.network.io.ExcelReader 
+import jerco.network.io.FreemakerWriter;
 import jerco.scenario.PercolationThresholdScenario;
 
 import com.vygovskiy.controls.fileedit.FileEdit;
@@ -39,6 +43,8 @@ class MainFrame extends JFrame {
 
     final static DEBUG_FILE = "/home/leonidv/Документы/" +
     		"Аспирантура/Программы/matrix.xls";
+
+    final static String DEFAULT_TEMPLATE = "templates/graphviz.ftl"
     
     private JButton loadFileButton;
     
@@ -57,6 +63,9 @@ class MainFrame extends JFrame {
     private Net net;
     
     private JButton buttonRun;
+    
+    private FileEdit templateFileEdit
+    private FileEdit exportFileEdit
     
     public MainFrame() {
         super("Модель доступности ИОИ");
@@ -79,28 +88,10 @@ class MainFrame extends JFrame {
         
         this.add fileEdit, "north, gap 2px 2px 2px 10px"
         
-        this.add new JSeparator(JSeparator.HORIZONTAL), "span, w 100%"
-               
-        this.add new JLabel("P min")
-        def input = createDecimalInput("pMin", new ValueRange(min:0, max:1, init:0))
-        this.add input, "w 100%";
-
-        input = createDecimalInput("pMax", new ValueRange(min:0, max:1, init:1))
-        this.add new JLabel("P max")
-        this.add input, "w 100%"
-        
-        this.add new JLabel("P шаг");
-        input =  createDecimalInput("pStep", new ValueRange(min:1E-6, max:1E-2, init:1E-4))
-        this.add input, "wrap, w 100%"
-        
-        this.add new JLabel("N эксп");
-        input = createIntegerInput ("ExperimentsCount", new ValueRange(min:100, max:10000, init:1000))
-        this.add input, "wrap, growx"
-
-        
-        buttonRun = new JButton("Запустить моделирование")
-        buttonRun.actionPerformed = loadNetwork
-        this.add buttonRun, "span, growx"
+        JTabbedPane tabbedPane = new JTabbedPane()
+        this.add tabbedPane, "north, h pref:pref:pref"
+        tabbedPane.addTab "Настройки сценария", createScenarioPanel()
+        tabbedPane.addTab "Настройки экспорта", createExportPanel()
         
         JTabbedPane chartTabbedPane = new JTabbedPane();
         
@@ -123,6 +114,80 @@ class MainFrame extends JFrame {
         this.add chartTabbedPane, "span, h 100%, w 100%"
     }
 
+    private FileEdit createFileEdit(String ... defaultFileNames) {
+        FileEdit fileEdit = null;
+        for (String fileName : defaultFileNames) {
+            File f = new File(fileName);
+            if (f.isFile()) {
+                fileEdit = new FileEdit(f.absolutePath);
+                break
+            }
+            
+            if (f.isDirectory()) {
+                fileEdit = new FileEdit(f);
+                break;
+            }
+        }
+        
+        if (fileEdit == null) {
+            fileEdit = new FileEdit(new File("."));
+        }
+        fileEdit.buttonText = "Выбрать"
+               
+        return fileEdit
+    }
+    
+    /**
+     * Создает панель настроек сценария.
+     * @return
+     */
+    private JPanel createScenarioPanel() {
+        JPanel scenarioPanel = new JPanel(new MigLayout());
+        
+        scenarioPanel.add new JLabel("P min")
+        def input = createDecimalInput("pMin", new ValueRange(min:0, max:1, init:0))
+        scenarioPanel.add input, "w 100%";
+        
+        input = createDecimalInput("pMax", new ValueRange(min:0, max:1, init:1))
+        scenarioPanel.add new JLabel("P max")
+        scenarioPanel.add input, "w 100%"
+        
+        scenarioPanel.add new JLabel("P шаг");
+        input =  createDecimalInput("pStep", new ValueRange(min:1E-6, max:1E-2, init:1E-4))
+        scenarioPanel.add input, "wrap, w 100%"
+                
+        scenarioPanel.add new JLabel("N эксп");
+        input = createIntegerInput ("ExperimentsCount", new ValueRange(min:100, max:10000, init:1000))
+        scenarioPanel.add input, "wrap, growx"
+        
+        buttonRun = new JButton("Запустить моделирование")
+        buttonRun.actionPerformed = runScenario
+        scenarioPanel.add buttonRun, "south"
+        
+        return scenarioPanel
+    }
+    
+    private JPanel createExportPanel() {
+        JPanel exportPanel = new JPanel(new MigLayout())
+        
+        exportPanel.add new JLabel("Шаблон: ")
+        
+        templateFileEdit = createFileEdit(
+            "src/main/distribute/templates/graphviz.ftl",
+            "templates/graphviz.ftl")
+        exportPanel.add templateFileEdit, "w 100%, wrap"
+        
+        exportPanel.add new JLabel("Результат: ")
+        exportFileEdit = createFileEdit()
+        exportPanel.add exportFileEdit, "w 100%, wrap"
+        
+        JButton exportButton = new JButton("Экспортировать структуру сети");
+        exportButton.actionPerformed = exportStructure
+        exportPanel.add exportButton, "south"
+        
+        return exportPanel
+    }
+    
     private JFreeChart createChart(params) {
         if (params.xLabel == null) {
             params.put "xLabel", "p устойчивости"
@@ -137,13 +202,18 @@ class MainFrame extends JFrame {
             PlotOrientation.VERTICAL,
             false, false, false)
     }
-    
-    def loadNetwork = { ae ->
-        buttonRun.enabled = false
+
+    private Net loadNet() {
         LOG.info "Selected file: ${fileEdit.file}"
-        net = new NetImpl(new ExcelReader(fileEdit.getFile()))
+        Net net = new NetImpl(new ExcelReader(fileEdit.getFile()))
         LOG.info "Network with ${net.size()} elements is loaded"
-               
+        return net;
+    }
+    
+    def runScenario = { ae ->
+        buttonRun.enabled = false
+        Net net = loadNet()
+        
         final PercolationThresholdScenario scenario = 
             new PercolationThresholdScenario(pMin:pMin, pMax:pMax, pStep:pStep);
         scenario.experimentsCount = experimentsCount
@@ -155,8 +225,21 @@ class MainFrame extends JFrame {
             new ScenarioRunner(scenario:scenario).start();
         } as Runnable; 
         
-    };
+    }
     
+    def exportStructure = {
+        Net net = loadNet()
+        
+        FreemakerWriter exporter = new FreemakerWriter(net);
+        
+        String templateFileName = templateFileEdit.getFile().absolutePath
+        exporter.loadTemplate templateFileEdit.getFile().absolutePath
+        LOG.info "Template is loaded: "+templateFileName
+        
+        String resultFileName = exportFileEdit.getFile().absolutePath
+        exporter.write exportFileEdit.getFile().absolutePath
+        LOG.info "Net is exported: "+resultFileName
+    }
     
     public void onExperimentFinished(scenario) {
         LOG.info "Experiment is finished"
