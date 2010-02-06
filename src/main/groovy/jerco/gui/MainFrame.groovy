@@ -60,8 +60,6 @@ class MainFrame extends JFrame {
     private JFreeChart chartPa;
     private JFreeChart chartMaxSize;
     
-    private Net net;
-    
     private JButton buttonRun;
     
     private FileEdit templateFileEdit
@@ -90,8 +88,8 @@ class MainFrame extends JFrame {
         
         JTabbedPane tabbedPane = new JTabbedPane()
         this.add tabbedPane, "north, h pref:pref:pref"
-        tabbedPane.addTab "Настройки сценария", createScenarioPanel()
-        tabbedPane.addTab "Настройки экспорта", createExportPanel()
+        tabbedPane.addTab "Моделирование", createScenarioPanel()
+        tabbedPane.addTab "Экспорт структуры", createExportPanel()
         
         JTabbedPane chartTabbedPane = new JTabbedPane();
         
@@ -158,7 +156,8 @@ class MainFrame extends JFrame {
                 
         scenarioPanel.add new JLabel("N эксп");
         input = createIntegerInput ("ExperimentsCount", new ValueRange(min:100, max:10000, init:1000))
-        scenarioPanel.add input, "wrap, growx"
+        scenarioPanel.add input, "growx, wrap"
+        
         
         buttonRun = new JButton("Запустить моделирование")
         buttonRun.actionPerformed = runScenario
@@ -333,7 +332,7 @@ class MainFrame extends JFrame {
     }
 
     private void plotResult(JFreeChart chart, Map map) {
-        XYSeries series = new XYSeries(map.hashCode())
+        XYSeries series = new XYSeries(fileEdit.file.name)
         map.each { 
             series.add it.key, it.value
         }

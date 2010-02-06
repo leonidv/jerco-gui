@@ -1,10 +1,12 @@
 digraph G {
+
 	node [
 		fontsize = "8"
 		shape = "circle"
 		width = "0.3"
 		height= "0.3"
 		margin= "0.01"
+		colorscheme = "paired12"
 	]
 
 	edge [
@@ -14,7 +16,7 @@ digraph G {
 	<#list nodes as node>
 		${node.id} [ 
 			label="${node.id}"	<#if node.inBound> 
-			fillcolor = "red" 
+			fillcolor = "${node.bound + 1}" 
 			style = "filled"
 			</#if>
 		]	
