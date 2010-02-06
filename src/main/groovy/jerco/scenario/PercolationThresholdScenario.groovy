@@ -30,6 +30,9 @@ class PercolationThresholdScenario implements Runnable {
     def  JProgressMonitor monitor
     def  MainFrame frame
     
+    def export = false
+    def exportFileName
+    
     private int progress = 0;
     
     def void run() {
@@ -43,6 +46,11 @@ class PercolationThresholdScenario implements Runnable {
         monitor.maximum = totalExperiments.intValue()
         monitor.visible = true;
         
+        File file
+        if (export) {
+            file = new File(exportFileName)
+        }
+        
         while (p < 1) {
             p += pStep
             Result result = experiment(p)
@@ -52,6 +60,11 @@ class PercolationThresholdScenario implements Runnable {
             pCrititcal.put p, result.pCritical
             pAvailability.put p, result.pAvailability
             maxSize.put p, result.maximumSize
+            
+            if (export) {
+                file.append "${p} ${result.pCritical}\n"
+            }
+            
             
             if (monitor.isCanceled) {
                 break

@@ -62,13 +62,16 @@ class MainFrame extends JFrame {
     
     private JButton buttonRun;
     
+    private JCheckBox exportData;
+    
     private FileEdit templateFileEdit
     private FileEdit exportFileEdit
+    
     
     public MainFrame() {
         super("Модель доступности ИОИ");
         initComponents();
-        setSize 400, 600
+        setSize 700, 600
 
         LOG.info "MainFrame is created"
     }
@@ -83,7 +86,7 @@ class MainFrame extends JFrame {
         }
         
         fileEdit.buttonText = "Загрузить"
-        
+            
         this.add fileEdit, "north, gap 2px 2px 2px 10px"
         
         JTabbedPane tabbedPane = new JTabbedPane()
@@ -94,7 +97,7 @@ class MainFrame extends JFrame {
         JTabbedPane chartTabbedPane = new JTabbedPane();
         
         chartPc = createChart([
-              title:"Сохранения связи между КУ",yLabel:"p связанности",
+              title:"Сохранения связи между КУ", yLabel:"p связанности",
             ])
         chartTabbedPane.addTab "Связанность КУ", new ChartPanel(chartPc)
         
@@ -140,23 +143,28 @@ class MainFrame extends JFrame {
      * @return
      */
     private JPanel createScenarioPanel() {
-        JPanel scenarioPanel = new JPanel(new MigLayout());
+        def rows = "[][fill,100%]20px[][fill,100%]20px[][fill,100%]"
+        JPanel scenarioPanel = new JPanel(new MigLayout("",rows));
         
         scenarioPanel.add new JLabel("P min")
         def input = createDecimalInput("pMin", new ValueRange(min:0, max:1, init:0))
-        scenarioPanel.add input, "w 100%";
+        scenarioPanel.add input
         
         input = createDecimalInput("pMax", new ValueRange(min:0, max:1, init:1))
         scenarioPanel.add new JLabel("P max")
-        scenarioPanel.add input, "w 100%"
+        scenarioPanel.add input
         
         scenarioPanel.add new JLabel("P шаг");
-        input =  createDecimalInput("pStep", new ValueRange(min:1E-6, max:1E-2, init:1E-4))
-        scenarioPanel.add input, "wrap, w 100%"
+        input =  createDecimalInput("pStep", new ValueRange(min:1E-6, max:1E-2, init:1E-3))
+        scenarioPanel.add input, "wrap"
                 
         scenarioPanel.add new JLabel("N эксп");
         input = createIntegerInput ("ExperimentsCount", new ValueRange(min:100, max:10000, init:1000))
-        scenarioPanel.add input, "growx, wrap"
+        scenarioPanel.add input
+        
+        exportData = new JCheckBox("Экспортировать значения")
+        exportData.toolTipText = "Сохранять все вычисленные значения в файл"
+        scenarioPanel.add exportData, "span, wrap"
         
         
         buttonRun = new JButton("Запустить моделирование")
@@ -219,6 +227,17 @@ class MainFrame extends JFrame {
         scenario.net = net
         scenario.frame = this;
         scenario.monitor = new JProgressMonitor(this, false)
+        scenario.export = exportData.selected
+        if (scenario.export) {
+            String exportFileName = fileEdit.file.name
+            
+            exportFileName = exportFileName.split("\\.")[0]+"_"
+            exportFileName += new Date().format("yyyy-MM-dd_HH-mm-ss");
+            exportFileName += ".data"
+                                                         
+            scenario.exportFileName = exportFileName
+            LOG.info "Experiments data will be exported to [${exportFileName}]"
+        }
         
         SwingUtilities.invokeLater {
             new ScenarioRunner(scenario:scenario).start();
