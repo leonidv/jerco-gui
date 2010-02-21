@@ -38,7 +38,7 @@
 	
 	<logger name="jerco.scenario" level="INFO"/>
 
-	<root level="debug">
+	<root level="none">
 		<appender-ref ref="STDOUT" />
 	</root>
 </configuration>

@@ -37,13 +37,13 @@
 	</dependencySets>
 	  <fileSets>
 	    <fileSet>
-	      <directory>src/main/ditribute/scripts</directory>
+	      <directory>src/main/distribute/scripts</directory>
 	      <outputDirectory>/</outputDirectory>
 	      <filtered>true</filtered>
 	      <fileMode>0764</fileMode>
 	    </fileSet>
 	    <fileSet>
-	    	<directory>src/main/ditribute/templates</directory>
+	    	<directory>src/main/distribute/templates</directory>
 	    	<outputDirectory>/templates/</outputDirectory>
 	    </fileSet>
 	  </fileSets>
