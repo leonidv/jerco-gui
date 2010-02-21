@@ -231,9 +231,7 @@ class MainFrame extends JFrame {
         if (scenario.export) {
             String exportFileName = fileEdit.file.name
             
-            exportFileName = exportFileName.split("\\.")[0]+"_"
-            exportFileName += new Date().format("yyyy-MM-dd_HH-mm-ss");
-            exportFileName += ".data"
+            exportFileName = exportFileName.split("\\.")[0]
                                                          
             scenario.exportFileName = exportFileName
             LOG.info "Experiments data will be exported to [${exportFileName}]"

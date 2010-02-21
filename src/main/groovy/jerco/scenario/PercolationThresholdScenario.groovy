@@ -33,6 +33,10 @@ class PercolationThresholdScenario implements Runnable {
     def export = false
     def exportFileName
     
+    def File filePc
+    def File filePa
+    def File fileSize
+    
     private int progress = 0;
     
     def void run() {
@@ -46,9 +50,12 @@ class PercolationThresholdScenario implements Runnable {
         monitor.maximum = totalExperiments.intValue()
         monitor.visible = true;
         
-        File file
+        
         if (export) {
-            file = new File(exportFileName)
+            String date = new Date().format("yyyy-MM-dd_HH-mm-ss");
+            filePc = new File("${date}-${exportFileName}-${experimentsCount}-pc.dat")
+            filePa = new File("${date}-${exportFileName}-${experimentsCount}-pa.dat")
+            fileSize = new File("${date}-${exportFileName}-${experimentsCount}-size.dat")
         }
         
         while (p < 1) {
@@ -59,12 +66,7 @@ class PercolationThresholdScenario implements Runnable {
             
             pCrititcal.put p, result.pCritical
             pAvailability.put p, result.pAvailability
-            maxSize.put p, result.maximumSize
-            
-            if (export) {
-                file.append "${p} ${result.pCritical}\n"
-            }
-            
+            maxSize.put p, result.maximumSize                       
             
             if (monitor.isCanceled) {
                 break
@@ -84,6 +86,10 @@ class PercolationThresholdScenario implements Runnable {
         BigDecimal availabilityCounter = 0.0;
         int maximumSize = 0;
         
+        if (export) {
+            fileSize.append "${p}"
+        }
+        
         for (i in 1..experimentsCount) {
             net.reset()
             net.infect p
@@ -96,17 +102,21 @@ class PercolationThresholdScenario implements Runnable {
                 LOG.debug "pAvailability = ${pA}"
                 
                 availabilityCounter += pA;                 
-                        
+                
                 LOG.debug "availabilityCounter = ${availabilityCounter}"
             }
             
             def clusters = net.clusters
+            
             if (!clusters.isEmpty()) {
                 clusters = clusters.reverse()
                 LOG.debug("p = ${p}, clusters found: ${clusters.size()}, " +
                         "maximum cluster: ${clusters[0].size()}");
-                
-                maximumSize += clusters[0].size()
+                def size = clusters[0].size()                
+                maximumSize += size
+                if (export && size > 0) {
+                    fileSize.append " ${size}"
+                }
             }
             
             monitor.inc()
@@ -115,12 +125,22 @@ class PercolationThresholdScenario implements Runnable {
             }
             
         }
-        return new Result(
-        pCritical: percolationClusterCounter / experimentsCount,
-        pAvailability: availabilityCounter / experimentsCount,
-        maximumSize: maximumSize / experimentsCount
-        )
         
+        
+        def result = new Result(
+                pCritical: percolationClusterCounter / experimentsCount,
+                pAvailability: availabilityCounter / experimentsCount,
+                maximumSize: maximumSize / experimentsCount
+                )
+        
+        if (export) {
+            filePc.append "${p} ${result.pCritical}\n"
+            filePa.append "${p} ${result.pAvailability}\n"
+            fileSize.append "\n"
+            
+        }
+        
+        return result;
     }
 }
 

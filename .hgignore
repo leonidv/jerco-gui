@@ -4,3 +4,12 @@
 target/*
 .*.swp
 .settings/*
+
+syntax: regexp
+\.png$
+syntax: regexp
+\.dot$
+syntax: regexp
+\.data$
+syntax: glob
+math*
