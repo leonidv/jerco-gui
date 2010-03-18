@@ -59,6 +59,8 @@ class MainFrame extends JFrame {
     private JFreeChart chartPc;
     private JFreeChart chartPa;
     private JFreeChart chartMaxSize;
+    private JFreeChart chartClustersCount;
+    private JFreeChart chartClusterMeanSize;
     
     private JButton buttonRun;
     
@@ -107,9 +109,21 @@ class MainFrame extends JFrame {
         chartTabbedPane.addTab "Доступность", new ChartPanel(chartPa)
         
         chartMaxSize = createChart([
-              title:"Максимальный кластер", yLabel:"Количество узлов"
+              title:"Максимальное количество узлов в кластере", yLabel:"Количество узлов"
             ])
         chartTabbedPane.addTab "Наибольший кластер", new ChartPanel(chartMaxSize)
+
+        chartClusterMeanSize = createChart([
+              title:"Среднее количество узлов в кластере", yLabel:"количество узлов"
+            ])
+
+        chartTabbedPane.addTab "Средний размер", new ChartPanel(chartClusterMeanSize)
+        
+        chartClustersCount = createChart([
+              title:"Количество образовавшихся кластеров", yLabel:"Количество кластеров"
+            ])
+        chartTabbedPane.addTab "Количество кластеров", new ChartPanel(chartClustersCount)
+
 
         
         this.add chartTabbedPane, "span, h 100%, w 100%"
@@ -260,9 +274,11 @@ class MainFrame extends JFrame {
     public void onExperimentFinished(scenario) {
         LOG.info "Experiment is finished"
         SwingUtilities.invokeLater { buttonRun.enabled = true } as Runnable
-        plotResult chartPc, scenario.pCrititcal;
-        plotResult chartPa, scenario.pAvailability;
+        plotResult chartPc, scenario.pCrititcal
+        plotResult chartPa, scenario.pAvailability
         plotResult chartMaxSize, scenario.maxSize
+        plotResult chartClusterMeanSize, scenario.meanSize
+        plotResult chartClustersCount, scenario.clustersCount
     }
     
     def createDecimalInput(String field, ValueRange valueRange) {

@@ -26,6 +26,8 @@ class PercolationThresholdScenario implements Runnable {
     def Map<BigDecimal,BigDecimal> pCrititcal;
     def Map<BigDecimal,BigDecimal> pAvailability;
     def Map<BigDecimal,Integer> maxSize;
+    def Map<BigDecimal,BigDecimal> meanSize;
+    def Map<BigDecimal,BigDecimal> clustersCount;
     
     def  JProgressMonitor monitor
     def  MainFrame frame
@@ -35,7 +37,9 @@ class PercolationThresholdScenario implements Runnable {
     
     def File filePc
     def File filePa
-    def File fileSize
+    def File fileClusterMaximumSize
+    def File fileClustersCount
+    def File fileClusterMeanSize
     
     private int progress = 0;
     
@@ -43,6 +47,9 @@ class PercolationThresholdScenario implements Runnable {
         pCrititcal = new HashMap<BigDecimal, BigDecimal>();
         pAvailability = new HashMap<BigDecimal, BigDecimal>();
         maxSize = new HashMap<BigDecimal, Integer>()
+        meanSize = new HashMap<BigDecimal, BigDecimal>();
+        clustersCount = new HashMap<BigDecimal, BigDecimal>();
+
         
         def p = pMin;
         
@@ -53,9 +60,12 @@ class PercolationThresholdScenario implements Runnable {
         
         if (export) {
             String date = new Date().format("yyyy-MM-dd_HH-mm-ss");
-            filePc = new File("${date}-${exportFileName}-${experimentsCount}-pc.dat")
-            filePa = new File("${date}-${exportFileName}-${experimentsCount}-pa.dat")
-            fileSize = new File("${date}-${exportFileName}-${experimentsCount}-size.dat")
+            String prefix = "${date}-${exportFileName}-${experimentsCount}"
+            filePc = new File(prefix + "-pc.dat")
+            filePa = new File(prefix + "-pa.dat")
+            fileClusterMaximumSize = new File(prefix + "-clusters-max-size.dat");
+            fileClustersCount = new File(prefix+"-clusters-counts.dat")
+            fileClusterMeanSize = new File(prefix+"-clusters-mean-size.dat")
         }
         
         while (p < 1) {
@@ -66,7 +76,10 @@ class PercolationThresholdScenario implements Runnable {
             
             pCrititcal.put p, result.pCritical
             pAvailability.put p, result.pAvailability
-            maxSize.put p, result.maximumSize                       
+            maxSize.put p, result.clusterMaximumSize
+            meanSize.put p, result.clustersMeanSize
+            clustersCount.put p, result.clustersCount 
+            
             
             if (monitor.isCanceled) {
                 break
@@ -77,17 +90,17 @@ class PercolationThresholdScenario implements Runnable {
         frame.onExperimentFinished(this)
     }
     
-    /**
-     * Возвращает количество возникновений перколяционного кластера.
-     * @return
-     */
     private Result experiment(p) {
         int percolationClusterCounter = 0;
         BigDecimal availabilityCounter = 0.0;
         int maximumSize = 0;
         
+        int clustersCountBuffer = 0;
+        BigDecimal meanSizeBuffer = 0;
+        
         if (export) {
-            fileSize.append "${p}"
+            fileClusterMaximumSize.append "${p}"
+            fileClustersCount.append "${p}"
         }
         
         for (i in 1..experimentsCount) {
@@ -107,16 +120,21 @@ class PercolationThresholdScenario implements Runnable {
             }
             
             def clusters = net.clusters
-            
+                       
             if (!clusters.isEmpty()) {
-                clusters = clusters.reverse()
-                LOG.debug("p = ${p}, clusters found: ${clusters.size()}, " +
-                        "maximum cluster: ${clusters[0].size()}");
-                def size = clusters[0].size()                
-                maximumSize += size
-                if (export && size > 0) {
-                    fileSize.append " ${size}"
+                clustersCountBuffer += clusters.size()
+                meanSizeBuffer += meanSize(clusters);
+
+                clusters = clusters.reverse()                               
+                def maximum = clusters[0].size()                
+                maximumSize += maximum
+                
+                if (export) {
+                    fileClusterMaximumSize.append " ${size}"
+                    fileClustersCount.append " ${clusters.size()}"  
+                    fileClusterMeanSize.append "${meanSize(clusters)}"
                 }
+                
             }
             
             monitor.inc()
@@ -130,29 +148,39 @@ class PercolationThresholdScenario implements Runnable {
         def result = new Result(
                 pCritical: percolationClusterCounter / experimentsCount,
                 pAvailability: availabilityCounter / experimentsCount,
-                maximumSize: maximumSize / experimentsCount
+                clustersCount: clustersCountBuffer / experimentsCount,
+                clusterMaximumSize: maximumSize/ experimentsCount,
+                clustersMeanSize: meanSizeBuffer / experimentsCount
                 )
         
         if (export) {
             filePc.append "${p} ${result.pCritical}\n"
             filePa.append "${p} ${result.pAvailability}\n"
-            fileSize.append "\n"
-            
+            fileClusterMaximumSize.append "\n"
+            fileClustersCount.append "\n"
         }
         
         return result;
+    }
+    
+    BigDecimal meanSize (Collection<Cluster> clusters) {
+        int buff = 0;
+        clusters.each{ buff += it.size() }
+        return buff/clusters.size()
     }
 }
 
 def class Result {
     def pCritical
     def pAvailability
-    def maximumSize
+    def clusterMaximumSize
+    def clustersCount
+    def clustersMeanSize
     
     @Override
     public String toString() {
         "pCritical = ${pCritical}, pAvailability = ${pAvailability}, " +
-        "maxSize = ${maximumSize}"
+        "maxSize = ${clusterMaximumSize}"
     }    
     
     
