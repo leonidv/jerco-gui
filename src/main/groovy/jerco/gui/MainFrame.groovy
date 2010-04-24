@@ -3,20 +3,24 @@ package jerco.gui
 import java.text.DecimalFormat 
 import java.text.NumberFormat;
 
+import java.awt.Cursor;
 import java.io.File;
 
 import org.jfree.chart.ChartPanel;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
+import javax.swing.JFileChooser;
 import javax.swing.JFormattedTextField;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JSeparator;
 import javax.swing.JTabbedPane;
+import javax.swing.RootPaneContainer;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.event.DocumentListener;
+import javax.swing.filechooser.FileNameExtensionFilter;
 
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
@@ -32,6 +36,7 @@ import jerco.network.io.ExcelReader
 import jerco.network.io.FreemakerWriter;
 import jerco.scenario.PercolationThresholdScenario;
 
+import com.vygovskiy.controls.SwingUtils;
 import com.vygovskiy.controls.fileedit.FileEdit;
 
 import net.miginfocom.swing.MigLayout;
@@ -48,7 +53,7 @@ class MainFrame extends JFrame {
     
     private JButton loadFileButton;
     
-    private FileEdit fileEdit
+    private String exportName
     
     def BigDecimal pMin
     def BigDecimal pMax
@@ -62,37 +67,46 @@ class MainFrame extends JFrame {
     private JFreeChart chartClustersCount;
     private JFreeChart chartClusterMeanSize;
     
+    private JLabel networkInformation
+    
     private JButton buttonRun;
+    
+    private File chooserDirectory = new File(".")
     
     private JCheckBox exportData;
     
     private FileEdit templateFileEdit
     private FileEdit exportFileEdit
     
+    private Net net;
     
     public MainFrame() {
         super("Модель доступности ИОИ");
         initComponents();
-        setSize 700, 600
+        setSize 750, 600
 
         LOG.info "MainFrame is created"
     }
     
     private void initComponents() {
         this.setLayout new MigLayout()
+               
+        JButton buttonLoadNet = new JButton("Загрузить структуры из файла")
+        buttonLoadNet.actionPerformed = loadNet
         
-        if ((new File(DEBUG_FILE).exists() )) {
-            fileEdit = new FileEdit(DEBUG_FILE)
-        } else {
-            fileEdit = new FileEdit();
-        }
+        JButton buttonGenerateNet = new JButton("Сгенерировать регулярную структуру")
+        buttonGenerateNet.actionPerformed = generateNet
         
-        fileEdit.buttonText = "Загрузить"
-            
-        this.add fileEdit, "north, gap 2px 2px 2px 10px"
+        networkInformation = new JLabel("Укажите обрабатываемую структуру")
+        
+        networkInformation.setHorizontalAlignment SwingConstants.CENTER
+        
+        this.add buttonLoadNet, "width 48%:48%, growx"
+        this.add buttonGenerateNet, "width 48%:48%, growx, wrap"
+        this.add networkInformation, "span, wrap, width 100%"
         
         JTabbedPane tabbedPane = new JTabbedPane()
-        this.add tabbedPane, "north, h pref:pref:pref"
+        this.add tabbedPane, "h pref:pref:pref, wrap, span, width 98%"
         tabbedPane.addTab "Моделирование", createScenarioPanel()
         tabbedPane.addTab "Экспорт структуры", createExportPanel()
         
@@ -129,6 +143,15 @@ class MainFrame extends JFrame {
         this.add chartTabbedPane, "span, h 100%, w 100%"
     }
 
+    /**
+     * Создает поле выбора файла.
+     *  
+     * @param defaultFileNames список имен по умолчанию. Сначала проверяет 
+     * первое имя и если файл существует, становится по умолчанию. Потом 
+     * следующее и т.д.
+     * 
+     * @return
+     */
     private FileEdit createFileEdit(String ... defaultFileNames) {
         FileEdit fileEdit = null;
         for (String fileName : defaultFileNames) {
@@ -224,16 +247,58 @@ class MainFrame extends JFrame {
             false, false, false)
     }
 
-    private Net loadNet() {
-        LOG.info "Selected file: ${fileEdit.file}"
-        Net net = new NetImpl(new ExcelReader(fileEdit.getFile()))
-        LOG.info "Network with ${net.size()} elements is loaded"
-        return net;
+    def loadNet = {
+        JFileChooser chooser = new JFileChooser(chooserDirectory);
+        FileNameExtensionFilter filter = 
+                new FileNameExtensionFilter("Файлы Excel", "xls");
+        chooser.fileFilter = filter;
+
+        
+        if (chooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
+            changeCursor Cursor.WAIT_CURSOR ;
+            
+            def file = chooser.selectedFile;
+            
+            LOG.info "Selected file: ${file}"
+            
+            net = new NetImpl(new ExcelReader(file))
+            networkInformation.text = "Считывается файл. Ждите..."            
+
+            networkInformation.text = file.absolutePath;
+            exportName = file.name.split("\\.")[0]
+
+            chooserDirectory = file.parentFile
+            
+            LOG.info "Network with ${net.size()} elements is loaded"
+            
+            
+            changeCursor Cursor.DEFAULT_CURSOR;
+        }
+        
+    }
+    
+    private void changeCursor(def cursorType) {
+        setCursor(Cursor.getPredefinedCursor(cursorType));
+    }
+    
+    def generateNet = {
+        RegularLatticeFrame frame = new RegularLatticeFrame(this);
+        SwingUtils.center frame
+        frame.setVisible true
+        if (frame.approved) {
+            networkInformation.text = "Генерация решетки. Ждите..."
+            changeCursor Cursor.WAIT_CURSOR;
+            
+            net = frame.generateNetwork()
+            networkInformation.text = frame.netDescription
+            exportName = frame.netDescription
+            
+            changeCursor Cursor.DEFAULT_CURSOR
+        }
     }
     
     def runScenario = { ae ->
         buttonRun.enabled = false
-        Net net = loadNet()
         
         final PercolationThresholdScenario scenario = 
             new PercolationThresholdScenario(pMin:pMin, pMax:pMax, pStep:pStep);
@@ -242,15 +307,7 @@ class MainFrame extends JFrame {
         scenario.frame = this;
         scenario.monitor = new JProgressMonitor(this, false)
         scenario.export = exportData.selected
-        if (scenario.export) {
-            String exportFileName = fileEdit.file.name
-            
-            exportFileName = exportFileName.split("\\.")[0]
-                                                         
-            scenario.exportFileName = exportFileName
-            LOG.info "Experiments data will be exported to [${exportFileName}]"
-        }
-        
+        scenario.exportFileName = exportName
         SwingUtilities.invokeLater {
             new ScenarioRunner(scenario:scenario).start();
         } as Runnable; 
@@ -365,7 +422,7 @@ class MainFrame extends JFrame {
     }
 
     private void plotResult(JFreeChart chart, Map map) {
-        XYSeries series = new XYSeries(fileEdit.file.name)
+        XYSeries series = new XYSeries(exportName)
         map.each { 
             series.add it.key, it.value
         }
