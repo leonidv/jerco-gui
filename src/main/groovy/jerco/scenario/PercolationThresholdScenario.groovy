@@ -3,6 +3,11 @@ package jerco.scenario;
 import java.math.BigDecimal;
 import java.util.HashMap;
 
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
+import javax.xml.bind.annotation.XmlElement;
+import javax.xml.bind.annotation.XmlRootElement;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -12,16 +17,22 @@ import jerco.gui.MainFrame
 import jerco.network.Cluster 
 import jerco.network.Net;
 
-class PercolationThresholdScenario implements Runnable {
+@XmlAccessorType( XmlAccessType.NONE )
+@XmlRootElement(name="scenario")
+public class PercolationThresholdScenario implements Runnable {
     final static Logger LOG = LoggerFactory.getLogger(PercolationThresholdScenario.class);
     
     def Net net;
     
-    def pMin = 0.0;
-    def pMax = 1.0;    
-    def pStep = 0.001;
+    @XmlElement
+    def BigDecimal pMin = 0.0;
+    @XmlElement
+    def BigDecimal pMax = 1.0;
+    @XmlElement
+    def BigDecimal pStep = 0.001;
     
-    def experimentsCount = 1000;
+    @XmlElement
+    def int experimentsCount = 1000;
     
     def Map<BigDecimal,BigDecimal> pCrititcal;
     def Map<BigDecimal,BigDecimal> pAvailability;
@@ -32,8 +43,10 @@ class PercolationThresholdScenario implements Runnable {
     def  JProgressMonitor monitor
     def  MainFrame frame
     
-    def export = false
-    def exportFileName
+    def boolean export = false
+    
+    @XmlElement
+    def String exportFileName = ""
     
     def File filePc
     def File filePa
@@ -49,14 +62,15 @@ class PercolationThresholdScenario implements Runnable {
         maxSize = new HashMap<BigDecimal, Integer>()
         meanSize = new HashMap<BigDecimal, BigDecimal>();
         clustersCount = new HashMap<BigDecimal, BigDecimal>();
-
+        
         
         def p = pMin;
         
         def totalExperiments = (pMax-pMin)/pStep*experimentsCount
-        monitor.maximum = totalExperiments.intValue()
-        monitor.visible = true;
-        
+        if (monitor) {
+            monitor.maximum = totalExperiments.intValue()
+            monitor.visible = true;
+        }
         
         if (export) {
             String date = new Date().format("yyyy-MM-dd_HH-mm-ss");
@@ -80,14 +94,18 @@ class PercolationThresholdScenario implements Runnable {
             meanSize.put p, result.clustersMeanSize
             clustersCount.put p, result.clustersCount 
             
-            
-            if (monitor.isCanceled) {
-                break
+            if (monitor) {
+                if (monitor.isCanceled) {
+                    break
+                }
             }
             
         }
-        monitor.dispose()
-        frame.onExperimentFinished(this)
+        
+        if (monitor) {
+            monitor.dispose()
+            frame.onExperimentFinished(this)
+        }
     }
     
     private Result experiment(p) {
@@ -120,11 +138,11 @@ class PercolationThresholdScenario implements Runnable {
             }
             
             def clusters = net.clusters
-                       
+            
             if (!clusters.isEmpty()) {
                 clustersCountBuffer += clusters.size()
                 meanSizeBuffer += meanSize(clusters);
-
+                
                 clusters = clusters.reverse()                               
                 def maximum = clusters[0].size()                
                 maximumSize += maximum
@@ -137,9 +155,11 @@ class PercolationThresholdScenario implements Runnable {
                 
             }
             
-            monitor.inc()
-            if (monitor.isCanceled) {
-                return;
+            if (monitor) {
+                monitor.inc()
+                if (monitor.isCanceled) {
+                    return;
+                }
             }
             
         }
@@ -158,6 +178,7 @@ class PercolationThresholdScenario implements Runnable {
             filePa.append "${p} ${result.pAvailability}\n"
             fileClusterMaximumSize.append "\n"
             fileClustersCount.append "\n"
+            fileClusterMeanSize.append "\n"
         }
         
         return result;
