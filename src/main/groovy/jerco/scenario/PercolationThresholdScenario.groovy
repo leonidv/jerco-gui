@@ -119,6 +119,7 @@ public class PercolationThresholdScenario implements Runnable {
         if (export) {
             fileClusterMaximumSize.append "${p}"
             fileClustersCount.append "${p}"
+            fileClusterMeanSize.append "${p}"
         }
         
         for (i in 1..experimentsCount) {
@@ -150,7 +151,7 @@ public class PercolationThresholdScenario implements Runnable {
                 if (export) {
                     fileClusterMaximumSize.append " ${maximumSize}"
                     fileClustersCount.append " ${clusters.size()}"  
-                    fileClusterMeanSize.append "${meanSize(clusters)}"
+                    fileClusterMeanSize.append " ${meanSize(clusters)}"
                 }
                 
             }
