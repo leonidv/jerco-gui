@@ -1,42 +1,42 @@
 <configuration>
 
 	<appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
-		<layout class="ch.qos.logback.classic.PatternLayout">
+		<encoder>
 			<Pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n
 			</Pattern>
-		</layout>
+		</encoder>
 	</appender>
 
 	<appender name="network.log" class="ch.qos.logback.core.FileAppender">
 		<File>logs/network.log</File>
 		<Append>false</Append>
 
-		<layout class="ch.qos.logback.classic.PatternLayout">
-			<Pattern>%-4relative [%thread] %-5level %logger{35} - %msg%n
+		<encoder>
+			<Pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{35} - %msg%n
 			</Pattern>
-		</layout>
+		</encoder>
 	</appender>
-	
+
 	<appender name="gui.log" class="ch.qos.logback.core.FileAppender">
 		<File>logs/gui.log</File>
 		<Append>false</Append>
 
-		<layout class="ch.qos.logback.classic.PatternLayout">
-			<Pattern>%-4relative [%thread] %-5level %logger{35} - %msg%n
+		<encoder>
+			<Pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{35} - %msg%n
 			</Pattern>
-		</layout>
+		</encoder>
 	</appender>
 
 
 	<logger name="jerco.network" level="INFO">
 		<appender-ref ref="network.log" />
 	</logger>
-	
+
 	<logger name="jerco.gui" level="INFO">
 		<appender-ref ref="gui.log" />
 	</logger>
-	
-	<logger name="jerco.scenario" level="INFO"/>
+
+	<logger name="jerco.scenario" level="INFO" />
 
 	<root level="none">
 		<appender-ref ref="STDOUT" />

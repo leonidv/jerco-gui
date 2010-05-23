@@ -81,7 +81,7 @@ class MainFrame extends JFrame {
     private Net net;
     
     public MainFrame() {
-        super("Модель доступности ИОИ");
+        super("Модель ИИС, функционирующих в неблагоприятных условиях");
         initComponents();
         setSize 750, 600
 
@@ -91,7 +91,7 @@ class MainFrame extends JFrame {
     private void initComponents() {
         this.setLayout new MigLayout()
                
-        JButton buttonLoadNet = new JButton("Загрузить структуры из файла")
+        JButton buttonLoadNet = new JButton("Загрузить структуру из файла")
         buttonLoadNet.actionPerformed = loadNet
         
         JButton buttonGenerateNet = new JButton("Сгенерировать регулярную структуру")
@@ -118,7 +118,7 @@ class MainFrame extends JFrame {
         chartTabbedPane.addTab "Связанность КУ", new ChartPanel(chartPc)
         
         chartPa = createChart([
-              title:"Доступность", yLabel:"p доступности"
+              title:"Доступность ключевых узлов", yLabel:"p доступности"
             ])
         chartTabbedPane.addTab "Доступность", new ChartPanel(chartPa)
         

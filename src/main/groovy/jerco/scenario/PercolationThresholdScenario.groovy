@@ -149,7 +149,7 @@ public class PercolationThresholdScenario implements Runnable {
                 maximumSize += maximum
                 
                 if (export) {
-                    fileClusterMaximumSize.append " ${maximumSize}"
+                    fileClusterMaximumSize.append " ${maximum}"
                     fileClustersCount.append " ${clusters.size()}"  
                     fileClusterMeanSize.append " ${meanSize(clusters)}"
                 }
