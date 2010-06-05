@@ -6,11 +6,12 @@ import javax.swing.event.ListDataListener;
 import jerco.network.generators.KagomeGenerator;
 import jerco.network.generators.NetGenerator;
 import jerco.network.generators.RectGenerator;
+import jerco.network.generators.TriangGenerator;
 
 class GeneratorComboboxModel implements ComboBoxModel {
     
     private List<NetGenerator> generators = [
-       new RectGenerator(),  new KagomeGenerator()
+       new RectGenerator(),  new KagomeGenerator(), new TriangGenerator()
     ] 
     
     private NetGenerator selectedItem = generators[0];

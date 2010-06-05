@@ -23,6 +23,7 @@ import jerco.network.NetStructureInfo;
 import jerco.network.generators.KagomeGenerator;
 import jerco.network.generators.NetGenerator;
 import jerco.network.generators.RectGenerator;
+import jerco.network.generators.TriangGenerator;
 import jerco.scenario.PercolationThresholdScenario;
 
 
@@ -46,10 +47,10 @@ def runGui() {
 
 def runCli() {
     CliBuilder cliBuilder = new CliBuilder()
-    cliBuilder.usage = "--properties settings.xml --structure [rect|kagome] --size N"
+    cliBuilder.usage = "--properties settings.xml --structure [rect|kagome|tring] --size N"
     cliBuilder.with {
         p longOpt: "properties", "file with scenario run settings", args: 1, required: true
-        s longOpt: "structure", "structure of network: rect (rectangle) or kagome", args: 1, required: true
+        s longOpt: "structure", "structure of network: rect (rectangle) or kagome or tring", args: 1, required: true
         n longOpt: "size", "size of network, integer", args: 1, required: true
     }
     
@@ -82,6 +83,9 @@ def runCli() {
         case "kagome":
             generator = new KagomeGenerator();
             break;
+        case "tring":
+        	generator = new TriangGenerator();
+        	break;
     }    
     
     NetStructureInfo netStructure = new NetStructureInfo()
