@@ -9,11 +9,11 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JSpinner;
 import javax.swing.tree.FixedHeightLayoutCache.VisibleFHTreeStateNodeEnumeration;
-
+import javax.swing.JCheckBox;
 import jerco.network.Net;
 import jerco.network.NetStructureInfo;
 import jerco.network.RegularLattice;
-
+import jerco.network.generators.LeftRightBoundsWrapper;
 import net.miginfocom.swing.MigLayout;
 
 class RegularLatticeFrame extends JDialog {
@@ -29,6 +29,8 @@ class RegularLatticeFrame extends JDialog {
     private JSpinner spinnerWidth;
     
     private JSpinner spinnerHeight;
+    
+    private JCheckBox moreBound;
     
     def boolean approved;
     
@@ -57,8 +59,10 @@ class RegularLatticeFrame extends JDialog {
         add new JLabel("Количество слоев:");
         spinnerHeight = new JSpinner();
         initSpinnerModel spinnerHeight;
-
         add spinnerHeight, "width 100%";
+        
+        moreBound = new JCheckBox("Дополнителеные границы")
+        add moreBound, "span, wrap";
         
         JButton button = new JButton("Отмена")
         button.actionPerformed = onCancelClick;
@@ -81,7 +85,10 @@ class RegularLatticeFrame extends JDialog {
         structure.generator = comboGenerator.model.selectedItem;
         structure.height = spinnerHeight.model.value
         structure.width = spinnerWidth.model.value
-        
+        if (moreBound.isSelected()) 
+        { 
+        	structure.addWrapper new LeftRightBoundsWrapper()
+        }
         return new RegularLattice(structure)
     }
 
