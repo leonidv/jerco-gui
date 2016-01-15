@@ -62,9 +62,9 @@
 		</dependency>
 
 		<dependency>
-			<groupId>jerco</groupId>
+			<groupId>net.sf.jerco</groupId>
 			<artifactId>jerco-api</artifactId>
-			<version>1.0-SNAPSHOT</version>
+			<version>1.1-SNAPSHOT</version>
 		</dependency>
 
 		<dependency>
@@ -86,8 +86,8 @@
 
 	<description>Приложение для рассчета параметров модели доступности ИОИ</description>
 	<scm>
-		<connection>http://jerco.hg.sourceforge.net/hgweb/jerco/</connection>
-		<url>http://jerco.hg.sourceforge.net/hgweb/jerco/</url>
+		<connection>git@github.com:leonidv/jerco-gui.git</connection>
+		<url>https://github.com/leonidv/jerco-gui</url>
 	</scm>
 	<build>
 		<resources>

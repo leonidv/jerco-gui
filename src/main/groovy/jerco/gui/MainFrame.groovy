@@ -33,7 +33,7 @@ import org.slf4j.LoggerFactory;
 import jerco.network.Net;
 import jerco.network.NetImpl;
 import jerco.network.io.ExcelReader 
-import jerco.network.io.FreemakerWriter;
+import jerco.network.io.FreemarkerWriter
 import jerco.scenario.PercolationThresholdScenario;
 
 import com.vygovskiy.controls.SwingUtils;
@@ -317,7 +317,7 @@ class MainFrame extends JFrame {
     def exportStructure = {
         Net net = loadNet()
         
-        FreemakerWriter exporter = new FreemakerWriter(net);
+        FreemarkerWriter exporter = new FreemarkerWriter(net);
         
         String templateFileName = templateFileEdit.getFile().absolutePath
         exporter.loadTemplate templateFileEdit.getFile().absolutePath
